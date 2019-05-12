@@ -153,9 +153,7 @@ int main() {
 	interval.tv_sec =INTERVAL_SEC;
 	interval.tv_nsec = INTERVAL_NSEC;
 	
-	int i = 100;
-
-	while(i>0) {
+	while(1) {
 		clock_gettime(CLOCK_REALTIME,&start);
 
 		int index = 0;

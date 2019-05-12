@@ -178,6 +178,7 @@ int main() {
 		if(wait.tv_sec>=0) {
 			nanosleep(&wait,NULL);
 		}
+		i--;
 	}
 
 

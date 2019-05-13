@@ -15,7 +15,7 @@
 
 #define INTERVAL_SEC 1
 #define INTERVAL_NSEC 0
-#define BATTERY_LOW_THRESHOLD 95
+#define BATTERY_LOW_THRESHOLD 16
 //TODO Error Handling
 
 
@@ -191,7 +191,7 @@ int main() {
 	interval.tv_sec =INTERVAL_SEC;
 	interval.tv_nsec = INTERVAL_NSEC;
 
-	send_notification("Hi","Welcome back, Carsten!","low");	
+	send_notification("Hi","Welcome back!","low");	
 	while(1) {
 		clock_gettime(CLOCK_REALTIME,&start);
 

@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <time.h>
+#include <locale.h>
 
 #include <alsa/asoundlib.h>
 #include <alsa/mixer.h>
@@ -14,17 +15,35 @@
 
 #define INTERVAL_SEC 1
 #define INTERVAL_NSEC 0
-
-//TODO Timed updates
-//TODO XCloseDisplay(dpy)
+#define BATTERY_LOW_THRESHOLD 95
 //TODO Error Handling
 
 
 const char* batfile = "/sys/class/power_supply/BAT0/capacity";
 const char* statusfile = "/sys/class/power_supply/AC/online";
 
+Bool firstrun = True;
+Bool charging;
+int last_battery_charge;
+
 void print_timespec(struct timespec *t) {
 	printf("%ld %ld\n",t->tv_sec,t->tv_nsec);
+}
+
+
+void send_notification(char title[], char msg[], char urgency[]) {
+	pid_t pid;
+	switch( pid = fork()) {
+		case -1:
+			printf("Error while forking for send_notification()\n");
+			break;
+		case 0:
+			execl("/usr/bin/notify-send","notify-send","-u",urgency,title,msg,0);
+			exit(0);
+			break;
+		default:
+			break;
+	}
 }
 
 void diff_timespec(struct timespec *diff, struct timespec *start, struct timespec *end) {
@@ -75,7 +94,7 @@ int get_time(char buffer[], int index) {
 	time_t current_time;
 	current_time = time(NULL);	
 	struct tm tm = *localtime(&current_time);
-	return strftime(buffer+index,30,"%c",&tm);
+	return strftime(buffer+index,40,"%a %x KW%W %H:%M:%S",&tm);
 }
 
 int get_batt(char buffer[], int index) {
@@ -91,10 +110,25 @@ int get_batt(char buffer[], int index) {
 	fp = fopen(statusfile,"r");
 	fgets(buf,10,fp);
 	fclose(fp);
+
 	
 	if(buf[0]==0x31) {
+		if(!firstrun && !charging) {
+			send_notification("Status","Plugged in","low");
+		}
+		charging = True;
+		last_battery_charge = perc;
 		return snprintf(buffer+index,10,"\ue215%d%%",perc);
-	} else {
+		} else {
+
+		if(!firstrun && perc < BATTERY_LOW_THRESHOLD && (last_battery_charge == BATTERY_LOW_THRESHOLD || charging)) {
+			send_notification("Status","Batter low.","Critical");
+		}
+		last_battery_charge = perc;
+		if(!firstrun && charging) {
+			send_notification("Status","Not plugged in","low");
+		}
+		charging = False;
 		if(perc>=90) {
 			return snprintf(buffer+index,10,"\ue24b%d%%",perc);
 			return 0;
@@ -136,7 +170,11 @@ int get_batt(char buffer[], int index) {
 }
 
 int main() {
-	
+	// Set Locale	
+	const char* LANG = getenv("LANG");
+	if(LANG) {
+		setlocale(LC_TIME,LANG);	
+	}
 
 	/** X11 **/
 	Display *dpy;
@@ -152,7 +190,8 @@ int main() {
 	//Update interval
 	interval.tv_sec =INTERVAL_SEC;
 	interval.tv_nsec = INTERVAL_NSEC;
-	
+
+	send_notification("Hi","Welcome back, Carsten!","low");	
 	while(1) {
 		clock_gettime(CLOCK_REALTIME,&start);
 
@@ -169,6 +208,7 @@ int main() {
 		XStoreName(dpy,DefaultRootWindow(dpy),buffer);
 		XFlush(dpy);
 
+		firstrun = False;
 
 		clock_gettime(CLOCK_REALTIME,&end);
 

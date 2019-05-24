@@ -1,7 +1,7 @@
 all: ownstatus
 
 ownstatus: ownstatus.c
-	$(CC) ownstatus.c -o ownstatus -lX11 -lasound -Wall -Wextra -pedantic -std=c99
+	$(CC) ownstatus.c -o ownstatus -lmpdclient -lX11 -lasound -Wall -Wextra -pedantic -std=c99
 
 clean: 
 	rm ownstatus

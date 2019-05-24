@@ -84,9 +84,9 @@ int get_volume(char buffer[], int index) {
 		percentage = (volume-min)*100/(max-min);
 		snd_mixer_close(handle);	
 		if(!switch_value) {
-			return snprintf(buffer+index,10,"\ue202");
+			return snprintf(buffer+index,10,"\uf6a9");
 		}else {
-			return snprintf(buffer+index,10,"\ue203%ld%%",percentage);
+			return snprintf(buffer+index,10,"\uf028%ld%%",percentage);
 		}
 }
 
@@ -118,7 +118,7 @@ int get_batt(char buffer[], int index) {
 		}
 		charging = True;
 		last_battery_charge = perc;
-		return snprintf(buffer+index,10,"\ue215%d%%",perc);
+		return snprintf(buffer+index,10,"\uf1e6%d%%",perc);
 		} else {
 
 		if(!firstrun && perc < BATTERY_LOW_THRESHOLD && (last_battery_charge == BATTERY_LOW_THRESHOLD || charging)) {
@@ -130,42 +130,22 @@ int get_batt(char buffer[], int index) {
 		}
 		charging = False;
 		if(perc>=90) {
-			return snprintf(buffer+index,10,"\ue24b%d%%",perc);
-			return 0;
-		}
-		if(perc>=80) {
-			return snprintf(buffer+index,10,"\ue24a%d%%",perc);
+			return snprintf(buffer+index,10,"\uf240%d%%",perc);
 			return 0;
 		}
 		if(perc>=70) {
-			return snprintf(buffer+index,10,"\ue249%d%%",perc);
-			return 0;
-		}
-		if(perc>=60) {
-			return snprintf(buffer+index,10,"\ue248%d%%",perc);
-			return 0;
-		}
-		if(perc>=50) {
-			return snprintf(buffer+index,10,"\ue247%d%%",perc);
+			return snprintf(buffer+index,10,"\uf241%d%%",perc);
 			return 0;
 		}
 		if(perc>=40) {
-			return snprintf(buffer+index,10,"\ue246%d%%",perc);
-			return 0;
-		}
-		if(perc>=30) {
-			return snprintf(buffer+index,10,"\ue245%d%%",perc);
-			return 0;
-		}
-		if(perc>=20) {
-			return snprintf(buffer+index,10,"\ue244%d%%",perc);
+			return snprintf(buffer+index,10,"\uf242%d%%",perc);
 			return 0;
 		}
 		if(perc>=10) {
-			return snprintf(buffer+index,10,"\ue243%d%%",perc);
+			return snprintf(buffer+index,10,"\uf243%d%%",perc);
 			return 0;
 		}
-		return snprintf(buffer+index,10,"\ue242%d%%",perc);
+		return snprintf(buffer+index,10,"\uf244%d%%",perc);
 	}
 }
 

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mpd/client.h>
+
 #include <time.h>
 #include <locale.h>
 
@@ -22,6 +24,8 @@
 const char* batfile = "/sys/class/power_supply/BAT0/capacity";
 const char* statusfile = "/sys/class/power_supply/AC/online";
 
+
+struct mpd_connection *conn;
 Bool firstrun = True;
 Bool charging;
 int last_battery_charge;
@@ -54,6 +58,94 @@ void diff_timespec(struct timespec *diff, struct timespec *start, struct timespe
 		diff->tv_nsec = end->tv_nsec - start->tv_nsec;
 		diff->tv_sec = end->tv_sec - start->tv_sec;
 	}
+}
+
+
+int get_mpd_status(char buffer[], int index) {
+
+	if(conn==NULL) conn = mpd_connection_new("127.0.0.1",6600,0);
+	if(conn==NULL) return 0;
+	
+
+	if(!mpd_command_list_begin(conn,true) ||
+	   !mpd_send_status(conn) ||
+	   !mpd_command_list_end(conn)) {
+		return 0;
+	};
+	
+	struct mpd_status *status = mpd_recv_status(conn);
+	if(status==NULL)  {
+		return 0;
+	}
+
+	switch(mpd_status_get_state(status)) {
+		case MPD_STATE_UNKNOWN:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue099");
+			break;
+		case MPD_STATE_STOP:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue099");
+			break;
+		case MPD_STATE_PAUSE:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue09b");
+			break;
+		case MPD_STATE_PLAY:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue058");
+			break;
+	}
+	return 0;
+}
+
+
+int get_mpd_status_and_song(char buffer[], int index) {
+
+	if(conn==NULL) conn = mpd_connection_new("127.0.0.1",6600,0);
+	if(conn==NULL) return 0;
+	
+
+	if(!mpd_command_list_begin(conn,true) ||
+	   !mpd_send_status(conn) ||
+	   !mpd_send_current_song(conn) ||
+	   !mpd_command_list_end(conn)) {
+		return 0;
+	};
+	
+	struct mpd_status *status = mpd_recv_status(conn);
+	if(status==NULL)  {
+		return 0;
+	}
+
+	int written = 0;
+	switch(mpd_status_get_state(status)) {
+		case MPD_STATE_UNKNOWN:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue099");
+			break;
+		case MPD_STATE_STOP:
+			mpd_status_free(status);
+			return snprintf(buffer+index,10,"\ue099");
+			break;
+		case MPD_STATE_PAUSE:
+			mpd_response_next(conn);
+			written += snprintf(buffer+index,10,"\ue09b");
+			break;
+		case MPD_STATE_PLAY:
+			mpd_response_next(conn);
+			written += snprintf(buffer+index,10,"\ue058");
+			break;
+	}
+
+	struct mpd_song *song = mpd_recv_song(conn);
+	if(song != NULL) {
+		written = snprintf(buffer+index+written,100,"%s - %s",mpd_song_get_tag(song,MPD_TAG_ARTIST,0),mpd_song_get_tag(song,MPD_TAG_TITLE,0));
+		mpd_song_free(song);
+	}
+
+	mpd_status_free(status);
+	return written;
 }
 
 
@@ -170,6 +262,9 @@ int get_batt(char buffer[], int index) {
 }
 
 int main() {
+
+
+
 	// Set Locale	
 	const char* LANG = getenv("LANG");
 	if(LANG) {
@@ -182,7 +277,6 @@ int main() {
 	/** Status Bar **/
 	struct timespec start,end,interval,wait,diff;
 	char buffer[255];
-
 
 	//Init X
 	dpy = XOpenDisplay(NULL);
@@ -198,6 +292,9 @@ int main() {
 		int index = 0;
 		strncpy(buffer+index," ",10);
 		index++;
+		index += get_mpd_status(buffer,index);
+		strncpy(buffer+index," ",2);
+		index+=1;
 		index += get_volume(buffer,index);
 		strncpy(buffer+index," | ",10);
 		index+=3;
@@ -221,5 +318,6 @@ int main() {
 	}
 
 
+	if(conn!=NULL) mpd_connection_free(conn);
 	XCloseDisplay(dpy);
 }

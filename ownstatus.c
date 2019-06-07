@@ -1,6 +1,8 @@
 #define _POSIX_C_SOURCE 199309L
 #define alloca(x) __builtin_alloca(x)
 
+#include <dirent.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +62,23 @@ void diff_timespec(struct timespec *diff, struct timespec *start, struct timespe
 	}
 }
 
+
+int get_mails_in_dir(char directory[], char buffer[], int index) {
+	DIR *dp;
+	struct dirent *ep;
+        int count = 0;	
+	dp = opendir(directory);
+	if(dp != NULL) {
+		while((ep = readdir(dp)))
+			count++;
+		closedir(dp);
+		count -= 2; 
+		return snprintf(buffer+index,10,"\uf0e0 %d",count);
+	}
+	else {
+		return 0;
+	}	
+}
 
 int get_mpd_status(char buffer[], int index) {
 
@@ -272,9 +291,12 @@ int main() {
 		int index = 0;
 		strncpy(buffer+index," ",10);
 		index++;
-		index += get_mpd_status(buffer,index);
-		strncpy(buffer+index," ",2);
-		index+=1;
+		index += get_mails_in_dir("/home/badagent/Mail/gmail/INBOX/new",buffer,index);
+		strncpy(buffer+index," | ",10);
+		index+=3;
+		index += get_mails_in_dir("/home/badagent/Mail/acht-werk/INBOX/new",buffer,index);
+		strncpy(buffer+index," | ",10);
+		index+=3;
 		index += get_volume(buffer,index);
 		strncpy(buffer+index," | ",10);
 		index+=3;
